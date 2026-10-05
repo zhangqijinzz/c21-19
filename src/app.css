@@ -1927,6 +1927,10 @@ button:disabled {
   color: #65745f;
   font: 10px var(--mono);
 }
+.snapshot-time-replayed {
+  color: #8a7a4e;
+  border-bottom: 1px dotted #c8b98a;
+}
 .change-summary {
   display: flex;
   flex-wrap: wrap;
@@ -1955,6 +1959,96 @@ button:disabled {
 .change-summary small {
   color: #93a187;
   font: 8px var(--mono);
+}
+.assumption-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  color: #6b7f55;
+  background: #eef4e4;
+  border-radius: 4px;
+  font: normal 8px var(--mono);
+  white-space: nowrap;
+}
+.assumption-tag-legacy {
+  color: #9a8a5f;
+  background: #f6f1e0;
+}
+.assumption-tag-replayed {
+  color: #4d6f8f;
+  background: #e6f0f6;
+}
+.assumption-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 auto 12px;
+  max-width: 850px;
+  padding: 9px 12px;
+  color: #7a8475;
+  background: #fafbf6;
+  border: 1px dashed #dde4d4;
+  border-radius: 8px;
+  font-size: 8px;
+  line-height: 1.6;
+}
+.assumption-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 auto 14px;
+  max-width: 850px;
+  padding: 11px 14px;
+  background: #fdf6ef;
+  border: 1px solid #efdcc8;
+  border-radius: 9px;
+}
+.assumption-banner-ok {
+  background: #f0f6e7;
+  border-color: #dde9cb;
+}
+.assumption-banner-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #b07a44;
+}
+.assumption-banner-ok .assumption-banner-copy {
+  color: #5f7d3e;
+}
+.assumption-banner-copy strong {
+  display: block;
+  font-size: 10px;
+}
+.assumption-banner-copy small {
+  display: block;
+  margin-top: 3px;
+  color: #9a8f7f;
+  font-size: 8px;
+  line-height: 1.6;
+}
+.assumption-banner-ok .assumption-banner-copy small {
+  color: #84926f;
+}
+.replay-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+  color: #a49381;
+  font-size: 8px;
+}
+.replay-button {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 8px;
+  white-space: nowrap;
+}
+.delta-warn {
+  color: #c08a3e;
 }
 .storage-overview {
   display: flex;

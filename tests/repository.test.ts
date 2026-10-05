@@ -86,4 +86,52 @@ describe("project repository recovery", () => {
     expect(loaded.document.projects[0]?.id).toBe(EXAMPLE_PROJECT.id);
     expect(loaded.recovered).toBe(true);
   });
+
+  it("accepts legacy snapshots without an assumption mode field", async () => {
+    const storage = new MemoryStorage();
+    const legacySnapshot = {
+      id: "snapshot-legacy",
+      name: "旧版本快照",
+      createdAt: 1_700_000_000_000,
+      concurrencyLimit: null,
+      nodes: [
+        {
+          id: "session",
+          name: "会话校验",
+          durationMs: 280,
+          jitterMs: 80,
+          dependencyIds: [],
+          timeoutMs: 800,
+          retryCount: 0,
+          failureRate: 0,
+        },
+      ],
+      completionMs: 280,
+      criticalPath: ["session"],
+    };
+    storage.value = {
+      version: 1,
+      activeProjectId: EXAMPLE_PROJECT.id,
+      projects: [
+        {
+          ...structuredClone(EXAMPLE_PROJECT),
+          scenarios: [
+            legacySnapshot,
+            {
+              ...legacySnapshot,
+              id: "bad-mode",
+              assumptionMode: "pessimistic",
+            },
+          ],
+        },
+      ],
+    };
+    const loaded = await new ProjectRepository(storage).load();
+    const project = loaded.document.projects[0];
+    expect(project?.scenarios).toHaveLength(2);
+    expect(project?.scenarios[0]?.assumptionMode).toBeUndefined();
+    expect(project?.scenarios[1]?.assumptionMode).toBeUndefined();
+    // 缺少/非法假设字段属于正常旧数据，不算损坏恢复
+    expect(loaded.recovered).toBe(false);
+  });
 });

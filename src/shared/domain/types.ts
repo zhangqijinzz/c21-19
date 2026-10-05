@@ -18,6 +18,8 @@ export interface ScenarioSnapshot {
   nodes: RequestNode[];
   completionMs: number;
   criticalPath: string[];
+  // 保存快照时所用的预算假设；早期版本保存的快照没有此字段，按当前假设处理。
+  assumptionMode?: SimulationMode;
 }
 
 export interface LatencyProject {
@@ -37,6 +39,16 @@ export interface WorkspaceDocument {
 }
 
 export type SimulationMode = "low" | "expected" | "high";
+
+export function isSimulationMode(value: unknown): value is SimulationMode {
+  return value === "low" || value === "expected" || value === "high";
+}
+
+export const SIMULATION_MODE_LABELS: Record<SimulationMode, string> = {
+  low: "乐观",
+  expected: "预期",
+  high: "保守",
+};
 
 export interface TimelineEntry {
   nodeId: string;

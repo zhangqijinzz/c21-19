@@ -1,5 +1,6 @@
 import {
   EXAMPLE_PROJECT,
+  isSimulationMode,
   type LatencyProject,
   type RequestNode,
   type ScenarioSnapshot,
@@ -89,6 +90,10 @@ function parseScenario(value: unknown): ScenarioSnapshot | undefined {
     criticalPath: value.criticalPath.filter(
       (id): id is string => typeof id === "string",
     ),
+    // 早期快照没有记录假设档位：缺字段按当前假设处理，不当作损坏数据。
+    ...(isSimulationMode(value.assumptionMode)
+      ? { assumptionMode: value.assumptionMode }
+      : {}),
   };
 }
 

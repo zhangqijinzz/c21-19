@@ -45,6 +45,11 @@ export function useLatencyLab() {
     baselineId: string;
     comparisonId: string;
   }>({ baselineId: "", comparisonId: "" });
+  // 按统一假设临时重推演一侧的覆盖，只影响本次对比，不改动已保存快照。
+  const [replayOverrides, setReplayOverrides] = useState<{
+    baselineMode?: SimulationMode;
+    comparisonMode?: SimulationMode;
+  }>({});
   const [notice, setNotice] = useState("");
   const [persisted, setPersisted] = useState<"saving" | "saved" | "error">(
     "saved",
@@ -74,7 +79,11 @@ export function useLatencyLab() {
     ) ?? scenarioList[0];
   const scenarioComparison: ScenarioComparison | undefined =
     baselineScenario && comparisonScenario
-      ? compareScenarios(baselineScenario, comparisonScenario)
+      ? compareScenarios(baselineScenario, comparisonScenario, {
+          currentMode: mode,
+          baselineMode: replayOverrides.baselineMode,
+          comparisonMode: replayOverrides.comparisonMode,
+        })
       : undefined;
   const simulationValid =
     Boolean(activeProject) &&
@@ -83,9 +92,26 @@ export function useLatencyLab() {
   const selectComparisonScenario = useCallback(
     (side: "baselineId" | "comparisonId", id: string) => {
       setComparisonIds((current) => ({ ...current, [side]: id }));
+      // 切换快照后，之前的统一假设重推演不再适用。
+      setReplayOverrides({});
     },
     [],
   );
+
+  const replayComparisonSide = useCallback(
+    (side: "baseline" | "comparison", targetMode: SimulationMode) => {
+      setReplayOverrides((current) =>
+        side === "baseline"
+          ? { ...current, baselineMode: targetMode }
+          : { ...current, comparisonMode: targetMode },
+      );
+    },
+    [],
+  );
+
+  const resetComparisonReplay = useCallback(() => {
+    setReplayOverrides({});
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -147,14 +173,20 @@ export function useLatencyLab() {
   const chooseProject = useCallback(
     (id: string) => {
       const current = documentRef.current;
-      if (current) commit(selectProject(current, id), "ready");
+      if (current) {
+        commit(selectProject(current, id), "ready");
+        setReplayOverrides({});
+      }
     },
     [commit],
   );
 
   const newProject = useCallback(() => {
     const current = documentRef.current;
-    if (current) commit(createProject(current), "editing");
+    if (current) {
+      commit(createProject(current), "editing");
+      setReplayOverrides({});
+    }
   }, [commit]);
 
   const renameActive = useCallback(
@@ -242,6 +274,8 @@ export function useLatencyLab() {
         baselineId: next.scenarios[1]?.id ?? next.scenarios[0]?.id ?? "",
         comparisonId: next.scenarios[0]?.id ?? "",
       });
+      // 新快照始终使用当前假设，清掉之前的重推演覆盖。
+      setReplayOverrides({});
       setNotice("方案快照已保存。");
       return true;
     },
@@ -256,9 +290,19 @@ export function useLatencyLab() {
   );
   const restoreSavedScenario = useCallback(
     (id: string) => {
-      if (activeProject) editProject(restoreScenario(activeProject, id));
+      if (!activeProject) return;
+      const restored = restoreScenario(activeProject, id, mode);
+      editProject(restored.project);
+      // 恢复旧方案时把当时的假设一起带回来；没有记录的旧快照沿用当前假设。
+      setMode(restored.mode);
+      setReplayOverrides({});
+      setNotice(
+        restored.legacy
+          ? "已恢复快照参数。该快照保存时未记录预算假设，沿用当前假设。"
+          : "已恢复快照参数与其预算假设。",
+      );
     },
-    [activeProject, editProject],
+    [activeProject, editProject, mode],
   );
 
   const retrySave = useCallback(() => {
@@ -300,5 +344,7 @@ export function useLatencyLab() {
     comparisonScenario,
     scenarioComparison,
     selectComparisonScenario,
+    replayComparisonSide,
+    resetComparisonReplay,
   };
 }
