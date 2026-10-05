@@ -18,6 +18,8 @@ export interface ScenarioSnapshot {
   nodes: RequestNode[];
   completionMs: number;
   criticalPath: string[];
+  /** 本次保存时使用的波动假设；旧版快照没有该字段，按当前假设解释。 */
+  assumptionMode?: SimulationMode;
 }
 
 export interface LatencyProject {
@@ -37,6 +39,25 @@ export interface WorkspaceDocument {
 }
 
 export type SimulationMode = "low" | "expected" | "high";
+
+export const SIMULATION_MODES: {
+  id: SimulationMode;
+  label: string;
+  sub: string;
+  situation: string;
+}[] = [
+  { id: "low", label: "乐观", sub: "低波动", situation: "乐观情境" },
+  { id: "expected", label: "预期", sub: "中位估算", situation: "预期情境" },
+  { id: "high", label: "保守", sub: "高波动", situation: "保守情境" },
+];
+
+export function isSimulationMode(value: unknown): value is SimulationMode {
+  return value === "low" || value === "expected" || value === "high";
+}
+
+export function modeLabel(mode: SimulationMode): string {
+  return SIMULATION_MODES.find((item) => item.id === mode)?.label ?? mode;
+}
 
 export interface TimelineEntry {
   nodeId: string;

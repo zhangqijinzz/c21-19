@@ -86,4 +86,34 @@ describe("project repository recovery", () => {
     expect(loaded.document.projects[0]?.id).toBe(EXAMPLE_PROJECT.id);
     expect(loaded.recovered).toBe(true);
   });
+
+  it("loads legacy snapshots without an assumption field as intact data", async () => {
+    const storage = new MemoryStorage();
+    storage.value = {
+      version: 1,
+      activeProjectId: EXAMPLE_PROJECT.id,
+      projects: [
+        {
+          ...structuredClone(EXAMPLE_PROJECT),
+          scenarios: [
+            {
+              id: "old-snapshot",
+              name: "旧版方案",
+              createdAt: 1_728_000_000_000,
+              concurrencyLimit: null,
+              nodes: EXAMPLE_PROJECT.nodes,
+              completionMs: 1200,
+              criticalPath: [],
+            },
+          ],
+        },
+      ],
+    };
+    const loaded = await new ProjectRepository(storage).load();
+    const scenario = loaded.document.projects[0]?.scenarios[0];
+    expect(scenario?.id).toBe("old-snapshot");
+    expect(scenario?.assumptionMode).toBeUndefined();
+    // 缺字段不是损坏，不应触发恢复提示。
+    expect(loaded.recovered).toBe(false);
+  });
 });

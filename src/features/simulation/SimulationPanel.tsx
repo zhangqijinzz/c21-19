@@ -11,6 +11,7 @@ import type {
   SimulationMode,
   SimulationResult,
 } from "../../shared/domain/types";
+import { SIMULATION_MODES } from "../../shared/domain/types";
 import Timeline from "./Timeline";
 
 interface Props {
@@ -22,11 +23,7 @@ interface Props {
   onRun: () => void;
 }
 
-const modes: { id: SimulationMode; label: string; sub: string }[] = [
-  { id: "low", label: "乐观", sub: "低波动" },
-  { id: "expected", label: "预期", sub: "中位估算" },
-  { id: "high", label: "保守", sub: "高波动" },
-];
+const modes = SIMULATION_MODES;
 
 function durationLabel(value: number): string {
   return value < 1000

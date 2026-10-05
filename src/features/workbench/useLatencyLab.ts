@@ -21,8 +21,10 @@ import {
 } from "../graph-editor/graphViewModel";
 import {
   compareScenarios,
+  projectScenario,
   removeScenario,
   restoreScenario,
+  restoreScenarioAssumption,
   saveScenario,
   type ScenarioComparison,
 } from "../scenarios/scenarioViewModel";
@@ -45,6 +47,20 @@ export function useLatencyLab() {
     baselineId: string;
     comparisonId: string;
   }>({ baselineId: "", comparisonId: "" });
+  // 两侧按统一假设重新推演的结果只用于本次对比，不写回已保存快照。
+  const [projection, setProjection] = useState<{
+    baselineMode?: SimulationMode;
+    comparisonMode?: SimulationMode;
+  }>({});
+  // 用户选择的统一假设；未选择时取基准侧的有效假设。
+  const [unifiedModeOverride, setUnifiedModeOverride] =
+    useState<SimulationMode | null>(null);
+  // 恢复旧方案后 mode state 要等下一次渲染才生效，保存路径需读到最新假设。
+  const modeRef = useRef(mode);
+  const applyMode = useCallback((nextMode: SimulationMode) => {
+    modeRef.current = nextMode;
+    setMode(nextMode);
+  }, []);
   const [notice, setNotice] = useState("");
   const [persisted, setPersisted] = useState<"saving" | "saved" | "error">(
     "saved",
@@ -64,28 +80,85 @@ export function useLatencyLab() {
     [activeProject],
   );
   const scenarioList = activeProject?.scenarios ?? [];
-  const baselineScenario =
+  const rawBaselineScenario =
     scenarioList.find((scenario) => scenario.id === comparisonIds.baselineId) ??
     scenarioList[1] ??
     scenarioList[0];
-  const comparisonScenario =
+  const rawComparisonScenario =
     scenarioList.find(
       (scenario) => scenario.id === comparisonIds.comparisonId,
     ) ?? scenarioList[0];
+  const baselineScenario = rawBaselineScenario
+    ? projection.baselineMode
+      ? projectScenario(rawBaselineScenario, projection.baselineMode)
+      : rawBaselineScenario
+    : undefined;
+  const comparisonScenario = rawComparisonScenario
+    ? projection.comparisonMode
+      ? projectScenario(rawComparisonScenario, projection.comparisonMode)
+      : rawComparisonScenario
+    : undefined;
   const scenarioComparison: ScenarioComparison | undefined =
-    baselineScenario && comparisonScenario
-      ? compareScenarios(baselineScenario, comparisonScenario)
+    rawBaselineScenario &&
+    rawComparisonScenario &&
+    baselineScenario &&
+    comparisonScenario
+      ? compareScenarios(baselineScenario, comparisonScenario, mode, {
+          ...(projection.baselineMode
+            ? { baselineMode: projection.baselineMode }
+            : {}),
+          ...(projection.comparisonMode
+            ? { comparisonMode: projection.comparisonMode }
+            : {}),
+        })
       : undefined;
+  const unifiedMode =
+    unifiedModeOverride ?? scenarioComparison?.baselineMode ?? mode;
   const simulationValid =
     Boolean(activeProject) &&
     result?.entries.length === activeProject?.nodes.length;
 
+  const activeProjectId = activeProject?.id;
+  const previousProjectIdRef = useRef(activeProjectId);
+  useEffect(() => {
+    if (activeProjectId && previousProjectIdRef.current !== activeProjectId) {
+      previousProjectIdRef.current = activeProjectId;
+      setComparisonIds({ baselineId: "", comparisonId: "" });
+      setProjection({});
+      setUnifiedModeOverride(null);
+    }
+  }, [activeProjectId]);
+
   const selectComparisonScenario = useCallback(
     (side: "baselineId" | "comparisonId", id: string) => {
       setComparisonIds((current) => ({ ...current, [side]: id }));
+      // 换了快照后，上一侧派生出的重新推演结果不再适用。
+      setProjection({});
+      setUnifiedModeOverride(null);
     },
     [],
   );
+
+  const projectComparisonSide = useCallback(
+    (side: "baseline" | "comparison", nextMode: SimulationMode) => {
+      setProjection((current) => ({
+        ...current,
+        [side === "baseline" ? "baselineMode" : "comparisonMode"]: nextMode,
+      }));
+      setUnifiedModeOverride(nextMode);
+    },
+    [],
+  );
+
+  const alignBothSides = useCallback((nextMode: SimulationMode) => {
+    setProjection({ baselineMode: nextMode, comparisonMode: nextMode });
+    setUnifiedModeOverride(nextMode);
+  }, []);
+
+  const clearProjection = useCallback(() => {
+    setProjection({});
+    setUnifiedModeOverride(null);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -213,11 +286,11 @@ export function useLatencyLab() {
   );
 
   const simulate = useCallback(
-    (nextMode = mode) => {
+    (nextMode = modeRef.current) => {
       if (!activeProject) return undefined;
       setStatus("simulating");
       const result = simulateProject(activeProject, nextMode);
-      setMode(nextMode);
+      applyMode(nextMode);
       setStatus(
         result.warnings.some((warning) => warning.includes("循环"))
           ? "error"
@@ -225,13 +298,14 @@ export function useLatencyLab() {
       );
       return result;
     },
-    [activeProject, mode],
+    [activeProject, applyMode],
   );
 
   const saveSnapshot = useCallback(
     (name: string): boolean => {
       if (!activeProject) return false;
-      const result = simulateProject(activeProject, mode);
+      const currentMode = modeRef.current;
+      const result = simulateProject(activeProject, currentMode);
       if (result.entries.length !== activeProject.nodes.length) {
         setNotice(result.warnings[0] ?? "请先修复链路配置再保存方案。");
         return false;
@@ -242,10 +316,12 @@ export function useLatencyLab() {
         baselineId: next.scenarios[1]?.id ?? next.scenarios[0]?.id ?? "",
         comparisonId: next.scenarios[0]?.id ?? "",
       });
+      setProjection({});
+      setUnifiedModeOverride(null);
       setNotice("方案快照已保存。");
       return true;
     },
-    [activeProject, editProject, mode],
+    [activeProject, editProject],
   );
 
   const removeSavedScenario = useCallback(
@@ -256,9 +332,21 @@ export function useLatencyLab() {
   );
   const restoreSavedScenario = useCallback(
     (id: string) => {
-      if (activeProject) editProject(restoreScenario(activeProject, id));
+      if (!activeProject) return;
+      // 把保存时使用的假设一起带回；旧快照没有记录，沿用当前假设。
+      const restoredMode = restoreScenarioAssumption(
+        activeProject,
+        id,
+        modeRef.current,
+      );
+      editProject(restoreScenario(activeProject, id));
+      if (restoredMode) {
+        applyMode(restoredMode);
+        setProjection({});
+        setUnifiedModeOverride(null);
+      }
     },
-    [activeProject, editProject],
+    [activeProject, editProject, applyMode],
   );
 
   const retrySave = useCallback(() => {
@@ -276,7 +364,7 @@ export function useLatencyLab() {
     module,
     setModule,
     mode,
-    setMode,
+    setMode: applyMode,
     notice,
     setNotice,
     persisted,
@@ -300,5 +388,10 @@ export function useLatencyLab() {
     comparisonScenario,
     scenarioComparison,
     selectComparisonScenario,
+    unifiedMode,
+    chooseUnifiedMode: setUnifiedModeOverride,
+    projectComparisonSide,
+    alignBothSides,
+    clearProjection,
   };
 }

@@ -1,5 +1,6 @@
 import {
   EXAMPLE_PROJECT,
+  isSimulationMode,
   type LatencyProject,
   type RequestNode,
   type ScenarioSnapshot,
@@ -83,6 +84,10 @@ function parseScenario(value: unknown): ScenarioSnapshot | undefined {
       typeof concurrencyLimit === "number" && concurrencyLimit > 0
         ? concurrencyLimit
         : null,
+    // 没有该字段的是旧版快照，按正常数据载入，由界面按当前假设解释。
+    ...(isSimulationMode(value.assumptionMode)
+      ? { assumptionMode: value.assumptionMode }
+      : {}),
     nodes: value.nodes
       .map(parseNode)
       .filter((node): node is RequestNode => Boolean(node)),

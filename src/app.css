@@ -1956,6 +1956,111 @@ button:disabled {
   color: #93a187;
   font: 8px var(--mono);
 }
+.assumption-warning {
+  max-width: 850px;
+  margin: 0 auto 14px;
+  padding: 13px 15px;
+  background: #fdf6ec;
+  border: 1px solid #ecd9b8;
+  border-radius: 9px;
+}
+.assumption-warning-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #8a6427;
+}
+.assumption-warning-head strong {
+  font-size: 10px;
+}
+.assumption-warning > p {
+  margin: 7px 0 0;
+  color: #94784a;
+  font-size: 9px;
+  line-height: 1.7;
+}
+.assumption-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.assumption-actions .button {
+  padding: 7px 11px;
+  font-size: 9px;
+}
+.button-secondary {
+  color: #6d6348;
+  background: #fff;
+  border: 1px solid #e3d6b8;
+}
+.button-secondary:hover {
+  background: #faf4e6;
+}
+.button-secondary:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.assumption-note {
+  margin-top: 8px;
+  color: #b09a6d !important;
+  font-size: 8px !important;
+}
+.assumption-aligned {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 850px;
+  margin: 0 auto 12px;
+  padding: 8px 12px;
+  color: #5f7a4b;
+  background: #eef4e6;
+  border: 1px solid #d7e4c6;
+  border-radius: 8px;
+  font-size: 9px;
+}
+.assumption-aligned button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6d8a55;
+  background: #fff;
+  border: 1px solid #d2dfbf;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 8px;
+  cursor: pointer;
+}
+.assumption-tag {
+  display: block;
+  margin-top: 6px;
+  padding: 2px 7px;
+  color: #7d8f5f;
+  background: #f1f5e9;
+  border-radius: 5px;
+  font-style: normal;
+  font: 8px var(--mono);
+}
+.assumption-tag small {
+  color: #b09a6d;
+  font-size: 7px;
+}
+.compare-card-accent .assumption-tag {
+  background: rgba(230, 240, 216, 0.12);
+  color: #b9c7a4;
+}
+.compare-card-accent .assumption-tag small {
+  color: #8fa17d;
+}
+.delta-unknown {
+  color: #c08a3e;
+}
+.legacy-hint {
+  color: #b09a6d;
+  cursor: help;
+}
 .storage-overview {
   display: flex;
   align-items: center;

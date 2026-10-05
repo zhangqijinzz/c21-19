@@ -163,6 +163,7 @@ export default function LatencyLabView() {
           {vm.module === "scenarios" && (
             <ScenarioPanel
               project={active}
+              currentMode={vm.mode}
               onSave={vm.saveSnapshot}
               onRemove={vm.removeSavedScenario}
               onRestore={vm.restoreSavedScenario}
@@ -175,6 +176,11 @@ export default function LatencyLabView() {
               onSelectComparison={(id) =>
                 vm.selectComparisonScenario("comparisonId", id)
               }
+              unifiedMode={vm.unifiedMode}
+              onChooseUnifiedMode={vm.chooseUnifiedMode}
+              onProjectSide={vm.projectComparisonSide}
+              onAlignBoth={vm.alignBothSides}
+              onClearProjection={vm.clearProjection}
             />
           )}
           {vm.module === "archive" && (
